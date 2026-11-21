@@ -1,0 +1,53 @@
+{
+  "name": "certiflow-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CertiFlow API, worker and WhatsApp stand-in",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env src/server.ts",
+    "dev:worker": "tsx watch --env-file=.env src/worker.ts",
+    "dev:whatsapp": "tsx src/mock-whatsapp/server.ts",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "start": "node dist/src/server.js",
+    "start:worker": "node dist/src/worker.js",
+    "start:whatsapp": "node dist/src/mock-whatsapp/server.js",
+    "migrate": "prisma migrate deploy",
+    "seed": "tsx --env-file=.env prisma/seed.ts",
+    "seed:prod": "node dist/prisma/seed.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:docker": "prisma migrate deploy && vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "bullmq": "5.34.0",
+    "cors": "2.8.5",
+    "csv-parse": "5.6.0",
+    "exceljs": "4.4.0",
+    "express": "4.21.2",
+    "helmet": "8.0.0",
+    "ioredis": "5.4.1",
+    "jsonwebtoken": "9.0.2",
+    "multer": "1.4.5-lts.1",
+    "pdfkit": "0.15.1",
+    "pino": "9.5.0",
+    "pino-http": "10.3.0",
+    "qrcode": "1.5.4",
+    "zod": "3.23.8",
+    "prisma": "5.22.0"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.17",
+    "@types/express": "4.17.21",
+    "@types/jsonwebtoken": "9.0.7",
+    "@types/multer": "1.4.12",
+    "@types/node": "22.10.1",
+    "@types/pdfkit": "0.13.8",
+    "@types/qrcode": "1.5.5",
+    "@types/supertest": "6.0.2",
+    "supertest": "7.0.0",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3",
+    "vitest": "2.1.8"
+  }
+}

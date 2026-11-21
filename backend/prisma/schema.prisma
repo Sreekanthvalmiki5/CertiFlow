@@ -1,0 +1,218 @@
+// CertiFlow data model.
+// Postgres is the single source of truth. Redis/BullMQ only hold derived or
+// re-creatable state (cache, queues), so losing Redis never loses a decision.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CENTRE
+  OFFICER
+  QUALITY
+  STATE
+}
+
+enum BatchStatus {
+  DRAFT
+  PENDING_DISTRICT
+  PENDING_QUALITY
+  PENDING_STATE
+  RETURNED
+  REJECTED
+  APPROVED
+}
+
+enum Stage {
+  DISTRICT
+  QUALITY
+  STATE
+}
+
+enum DecisionType {
+  APPROVE
+  REJECT
+  SEND_BACK
+}
+
+enum CertificateStatus {
+  VALID
+  REVOKED
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model District {
+  id      String   @id
+  name    String
+  centres Centre[]
+  users   User[]
+
+  @@map("districts")
+}
+
+model Centre {
+  id         String   @id
+  name       String
+  districtId String
+  district   District @relation(fields: [districtId], references: [id])
+  users      User[]
+  batches    Batch[]
+
+  @@map("centres")
+}
+
+model User {
+  id         String    @id
+  name       String
+  role       Role
+  districtId String?
+  district   District? @relation(fields: [districtId], references: [id])
+  centreId   String?
+  centre     Centre?   @relation(fields: [centreId], references: [id])
+
+  @@map("users")
+}
+
+model Batch {
+  id             String      @id @default(uuid())
+  centreId       String
+  centre         Centre      @relation(fields: [centreId], references: [id])
+  title          String
+  course         String
+  status         BatchStatus @default(DRAFT)
+  // Incremented on every resubmission. Decisions are bound to a revision, so
+  // votes cast on an older revision never count towards the current one.
+  revision       Int         @default(1)
+  candidateCount Int         @default(0)
+  // When the batch entered its current stage: drives the "stuck" SLA.
+  stageEnteredAt DateTime    @default(now())
+  escalatedAt    DateTime?
+  returnReason   String?
+  returnedBy     String?
+  createdById    String
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  candidates   Candidate[]
+  decisions    Decision[]
+  certificates Certificate[]
+
+  @@index([status, stageEnteredAt])
+  @@index([centreId])
+  @@map("batches")
+}
+
+model Candidate {
+  id           String       @id @default(uuid())
+  batchId      String
+  batch        Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  rowNumber    Int
+  name         String
+  enrollmentNo String
+  phone        String
+  dateOfBirth  DateTime     @db.Date
+  grade        String
+  certificate  Certificate?
+
+  @@unique([batchId, enrollmentNo])
+  @@index([enrollmentNo])
+  @@map("candidates")
+}
+
+model Decision {
+  id        String       @id @default(uuid())
+  batchId   String
+  batch     Batch        @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  revision  Int
+  stage     Stage
+  actorId   String
+  decision  DecisionType
+  reason    String?
+  createdAt DateTime     @default(now())
+
+  // One vote per person per stage per revision. This is what makes a
+  // double-click or a replayed request harmless.
+  @@unique([batchId, revision, stage, actorId])
+  @@map("decisions")
+}
+
+model Certificate {
+  id               String            @id @default(uuid())
+  // Human-facing number, e.g. PSM-2026-000042, drawn from a Postgres sequence.
+  number           String            @unique
+  // Short secret printed on the certificate; needed (with the number) to verify.
+  verifyCode       String
+  candidateId      String            @unique
+  candidate        Candidate         @relation(fields: [candidateId], references: [id])
+  // One certificate per enrollment, ever: guards against the same person being
+  // certified twice through two different batches.
+  enrollmentNo     String            @unique
+  batchId          String
+  batch            Batch             @relation(fields: [batchId], references: [id])
+  holderName       String
+  course           String
+  centreName       String
+  phone            String
+  status           CertificateStatus @default(VALID)
+  issuedAt         DateTime          @default(now())
+  pdfPath          String?
+  pdfGeneratedAt   DateTime?
+  deliveryStatus   DeliveryStatus    @default(PENDING)
+  deliveryAttempts Int               @default(0)
+  deliveredAt      DateTime?
+  providerMessageId String?
+  lastDeliveryError String?
+  revokedAt        DateTime?
+  revokedById      String?
+  revokeReason     String?
+
+  @@index([batchId])
+  @@index([deliveryStatus, issuedAt])
+  @@map("certificates")
+}
+
+// Append-only audit trail: every decision and every side effect, with who,
+// when and the request/correlation id that caused it.
+model AuditEvent {
+  id         BigInt   @id @default(autoincrement())
+  entityType String
+  entityId   String
+  batchId    String?
+  action     String
+  actorId    String?
+  actorRole  String?
+  fromStatus String?
+  toStatus   String?
+  details    Json?
+  requestId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([batchId])
+  @@map("audit_events")
+}
+
+// Transactional outbox: events are written in the same DB transaction as the
+// state change, then relayed to the queue. No event is lost if a process dies
+// between "commit" and "publish".
+model OutboxEvent {
+  id          BigInt    @id @default(autoincrement())
+  type        String
+  payload     Json
+  createdAt   DateTime  @default(now())
+  publishedAt DateTime?
+
+  @@index([publishedAt, id])
+  @@map("outbox_events")
+}
