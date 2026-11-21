@@ -137,7 +137,9 @@ export function BatchDetail({ id, me, tick, onChanged }: { id: string; me: DemoU
         <div className="card">
           <strong>Candidates spreadsheet</strong>
           <p className="muted small">
-            Columns: name, enrollment_no, phone, date_of_birth, grade. CSV or Excel. Samples:{' '}
+            Columns: name, enrollment_no, phone, date_of_birth, grade. CSV or Excel. Excel samples:{' '}
+            <a href="/samples/demo_batch_10.xlsx" download>10 rows</a> · <a href="/samples/demo_batch_60.xlsx" download>60 rows (large)</a> ·{' '}
+            <a href="/samples/demo_batch_with_errors.xlsx" download>with errors</a>. CSV samples:{' '}
             <a href="/samples/good_batch_8.csv" download>8 rows</a> · <a href="/samples/good_batch_60.csv" download>60 rows</a> ·{' '}
             <a href="/samples/bad_batch.csv" download>with errors</a>
           </p>
