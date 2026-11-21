@@ -41,6 +41,8 @@ async function write(file: string, rows: Row[], note?: string) {
 async function main() {
   await write('demo_batch_10.xlsx', goodRows('XL-PL26', 10, 9810000000),
     'Small batch (10 candidates): District (2 officers) -> State office -> certificates.');
+  await write('demo_batch_20.xlsx', goodRows('XL-WD26', 20, 9840000000),
+    'Small batch (20 candidates, < 50): District (2 officers) -> State office -> certificates.');
   await write('demo_batch_60.xlsx', goodRows('XL-DE26', 60, 9820000000),
     'Large batch (60 candidates, >= 50): District (2 officers) -> Quality team (Neha) -> State office.');
 
