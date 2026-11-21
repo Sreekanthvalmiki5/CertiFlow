@@ -7,8 +7,8 @@ x-backend-env: &backend-env
   WHATSAPP_URL: http://whatsapp:4100
   PUBLIC_BASE_URL: http://localhost:8080
   CERTIFICATE_DIR: /data/certificates
-  JWT_SECRET: ${JWT_SECRET:-local-demo-jwt-secret-please-change-0001}
-  DOWNLOAD_SECRET: ${DOWNLOAD_SECRET:-local-demo-download-secret-change-0001}
+  JWT_SECRET: ${JWT_SECRET:-hisfdsy7w9er3w7r32923r-0001}
+  DOWNLOAD_SECRET: ${DOWNLOAD_SECRET:-ijdfuesfwjeryw7r9230001}
   # Short SLA so the "stuck batch" escalation is visible in a demo.
   STAGE_SLA_MINUTES: ${STAGE_SLA_MINUTES:-30}
   SLA_SWEEP_INTERVAL_MS: 15000
