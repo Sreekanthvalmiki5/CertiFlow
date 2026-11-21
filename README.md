@@ -141,6 +141,7 @@ Open http://localhost:8080 and pick a person. Each browser tab keeps its own sig
 
 1. **Anika (centre):** "+ New batch" → upload `bad_batch.csv` (sample link in the upload box) → see the exact row and column errors, with *nothing saved* → upload `good_batch_60.csv` → Submit.
 2. **Dev** and **Meera (officers):** approve. The batch moves to the **quality team** (60 ≥ 50). Kabir arriving late gets "already moved on".
+   - **Truly simultaneous approvals:** people can't click in the same millisecond, so run `node backend/scripts/race-approve.mjs`. It creates a fresh batch and fires Dev, Meera and Kabir's approvals in parallel: two votes are stored, one officer gets a 409, and the batch moves forward **exactly once**. Pass a title to race on an existing batch, e.g. `node backend/scripts/race-approve.mjs "Welding"`.
 3. **Neha (quality)** approves → **Farah (state)** approves → watch the delivered count rise live as the flaky WhatsApp stand-in fails and gets retried.
 4. Open **/phone** and enter a candidate's number (e.g. `+919700000000`): exactly one message with a PDF link.
 5. **Farah:** copy a certificate number. The verification code is on the PDF; for seeded data, the PDF is linked from /phone. Check it on **/verify** (genuine) → cancel it in Farah's certificate list → check again: **"No longer valid"**.
